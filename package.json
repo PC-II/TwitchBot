@@ -1,7 +1,6 @@
 {
-  "main": "index.html",
   "scripts": {
-    "start": "node public/bot.js"
+    "start": "node public/index.html"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
