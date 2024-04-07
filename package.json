@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "node public/bot.js"
+    "test": "node public/bot.js",
+    "build": ""
   },
   "dependencies": {
     "dotenv": "^16.4.5",
