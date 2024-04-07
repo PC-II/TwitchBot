@@ -1,0 +1,22 @@
+:root
+{
+  /* Light Mode */
+  --onyx: #2E3532;
+  --reseda-green: #7E9181;
+  --french-gray: #C7CEDB;
+  --cadet-gray: #A0AAB2;
+  --mountbatten-pink: #94849B;
+
+  /* Dark Mode */
+
+}
+
+body
+{
+  background: gray
+  
+}
+
+@media screen {
+  
+}
