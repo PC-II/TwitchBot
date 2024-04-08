@@ -153,13 +153,13 @@ const startGame = async (client, channel, user, message) => {
   {
     case 'single':
       // check syntax
-      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Single bet should be: "!play [AMOUNT] single [NUMBER]"`);
         console.log(`[BOT] @${user.username} A Single bet should be: "!play [AMOUNT] single [NUMBER]"`);
         return;
       }
+      if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
       multiplier = 35;
       win = hasWonInsideBet(randomNumber, user.username);
@@ -167,13 +167,13 @@ const startGame = async (client, channel, user, message) => {
 
     case 'double':
       // check syntax
-      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.length != 5)
       {
         client.say(channel, `[BOT] @${user.username} A Double bet should be: "!play [AMOUNT] double [NUMBER] [NUMBER]"`);
         console.log(`[BOT] @${user.username} A Double bet should be: "!play [AMOUNT] double [NUMBER] [NUMBER]"`);
         return;
       }
+      if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
       multiplier = 17;
       win = hasWonInsideBet(randomNumber, user.username);
@@ -181,13 +181,13 @@ const startGame = async (client, channel, user, message) => {
 
     case 'triple':
       // check syntax
-      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.length != 6)
       {
         client.say(channel, `[BOT] @${user.username} A Triple bet should be: "!play [AMOUNT] triple [NUMBER] [NUMBER] [NUMBER]"`);
         console.log(`[BOT] @${user.username} A Triple bet should be: "!play [AMOUNT] triple [NUMBER] [NUMBER] [NUMBER]"`);
         return;
       }
+      if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
       multiplier = 11;
       win = hasWonInsideBet(randomNumber, user.username);
@@ -195,13 +195,13 @@ const startGame = async (client, channel, user, message) => {
 
     case 'quad':
       // check syntax
-      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.length != 7)
       {
         client.say(channel, `[BOT] @${user.username} A Quad bet should be: "!play [AMOUNT] quad [NUMBER] [NUMBER] [NUMBER] [NUMBER]"`);
         console.log(`[BOT] @${user.username} A Quad bet should be: "!play [AMOUNT] quad [NUMBER] [NUMBER] [NUMBER] [NUMBER]"`);
         return;
       }
+      if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
       multiplier = 8;
       win = hasWonInsideBet(randomNumber, user.username);
@@ -209,13 +209,13 @@ const startGame = async (client, channel, user, message) => {
 
     case 'line':
       // check syntax
-      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Line bet is where the [NUMBER] is the start of your six numbers: "!play [AMOUNT] line [ 0 - 30 ]"`);
         console.log(`[BOT] @${user.username} A Line bet is where the [NUMBER] is the start of your six numbers: "!play [AMOUNT] line [ 0 - 30 ]"`);
         return;
       }
+      if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.at(3) === '00' || params.at(3) > 30)  // custom rules for line bets
       {
         client.say(channel, `[BOT] @${user.username} Only 0-30 are valid numbers for a Line bet.`);
@@ -228,49 +228,53 @@ const startGame = async (client, channel, user, message) => {
     break;
 
     case 'dozen':
-      if(!hasValidThird(channel, params.at(3), user.username)) return;
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Dozen bet should be: "!play [AMOUNT] dozen [ 1 | 2 | 3 ]"`);
         console.log(`[BOT] @${user.username} A Dozen bet should be: "!play [AMOUNT] dozen [ 1 | 2 | 3 ]"`);
         return;
       }
+      if(!hasValidThird(channel, params.at(3), user.username)) return;
+
       multiplier = 2;
       win = hasWonThirdBet(randomNumber, params.at(3), 1);
     break;
 
     case 'column':
-      if(!hasValidThird(channel, params.at(3), user.username)) return;
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Column bet should be: "!play [AMOUNT] column [ 1 | 2 | 3 ]"`);
         console.log(`[BOT] @${user.username} A Column bet should be: "!play [AMOUNT] column [ 1 | 2 | 3 ]"`);
         return;
       }
+      if(!hasValidThird(channel, params.at(3), user.username)) return;
+
       multiplier = 2;
       win = hasWonThirdBet(randomNumber, params.at(3), 2);
     break;
 
     case 'half':
-      if(!hasValidHalf(channel, params.at(3), user.username, 1)) return;
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Half bet should be: "!play [AMOUNT] half [ 1 | 2 ]"`);
         console.log(`[BOT] @${user.username} A Half bet should be: "!play [AMOUNT] half [ 1 | 2 ]"`);
         return;
       }
+      if(!hasValidHalf(channel, params.at(3), user.username, 1)) return;
+
       win = hasWonHalfBet(randomNumber, params.at(3), 1);
     break;
 
     case 'red':
     case 'black':
-      if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
       if(params.length != 3)
       {
         client.say(channel, `[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
         console.log(`[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
         return;
       }
+      if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
+
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
 
       // adding a color description to the results
@@ -284,13 +288,14 @@ const startGame = async (client, channel, user, message) => {
 
     case 'even':
     case 'odd':
-      if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
       if(params.length != 3)
       {
         client.say(channel, `[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
         console.log(`[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
         return;
       }
+      if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
+
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
     break;
 
@@ -371,9 +376,11 @@ const hasValidThird = (channel, selectedNumber, username) => {
 const hasWonThirdBet = (randomNumber, selectedNumber, sel) => {
   if(sel == 1)
   {
-    if(selectedNumber == 1 && (randomNumber < 13 && randomNumber != 0)) return true;
-    else if (selectedNumber == 2 && (randomNumber < 25)) return true;
-    else if (selectedNumber == 3 && (randomNumber < 37)) return true;
+    console.log(`SELECTED: ${selectedNumber}`);
+    console.log(`RANDOM: ${randomNumber}`);
+    if(selectedNumber == 1 && randomNumber > 0 && randomNumber < 13) return true;
+    else if (selectedNumber == 2 && randomNumber > 12 && randomNumber < 25) return true;
+    else if (selectedNumber == 3 && randomNumber > 24 && randomNumber < 37) return true;
     else return false;
   }
   else
@@ -389,7 +396,7 @@ const hasWonThirdBet = (randomNumber, selectedNumber, sel) => {
   }
 }
 const hasValidHalf = (channel, selected, username, sel) => {
-  if(sel === 1)
+  if(sel == 1)
   {
     if(selected < 0 || selected > 2 || isNaN(selected) || !Number.isInteger(Number(selected)))
     {
@@ -399,7 +406,7 @@ const hasValidHalf = (channel, selected, username, sel) => {
     }
     return true;
   }
-  if(sel === 2)
+  if(sel == 2)
   {
     if(selected !== 'red' && selected !== 'black' && selected !== 'even' && selected !== 'odd')
     {
@@ -411,7 +418,7 @@ const hasValidHalf = (channel, selected, username, sel) => {
   }
 }
 const hasWonHalfBet = (randomNumber, selected, sel) => {
-  if(sel === 1)
+  if(sel == 1)
   {
     if(selected == 1 && randomNumber < 19 && randomNumber !== 0) return true;
     else if(selected == 2 && randomNumber < 37) return true;
@@ -484,11 +491,11 @@ const main = async () => {
 
     // notify streamer when someone joined and left the channel
     // this will also be used to give passive watching points
-    client.on('join', async (channel, user, self) => {
-      if(self) return; // Ignore join action from our own bot
-      client.say(channel, `[BOT] Welcome ${user}!`);
-      console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
-    });
+    // client.on('join', async (channel, user, self) => {
+    //   if(self) return; // Ignore join action from our own bot
+    //   client.say(channel, `[BOT] Welcome ${user}!`);
+    //   console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
+    // });
     // client.on('part', async (channel, user, self) => {
     //   if(self) return;
     //   client.say(channel, `[BOT] Goodbye ${user}!`);
