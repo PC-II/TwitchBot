@@ -1,8 +1,9 @@
-require('dotenv').config();
-const tmi = require('tmi.js');
-const { OpenAI } = require('openai');
-const { initializeApp } = require('firebase/app');
-const { getDatabase, ref, update, set, get } = require('firebase/database');
+import env from 'dotenv';
+env.config();
+import tmi from 'tmi.js';
+import { OpenAI } from 'openai';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, update, set, get } from 'firebase/database';
 
 const username = 'pc_ii';
 const oauthToken = process.env.OAUTHTOKEN;
