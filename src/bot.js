@@ -267,8 +267,8 @@ const startGame = async (client, channel, user, message) => {
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
       if(params.length != 3)
       {
-        client.say(channel, `[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ] [ 1 | 2 ]"`);
-        console.log(`[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ] [ 1 | 2 ]"`);
+        client.say(channel, `[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
+        console.log(`[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
         return;
       }
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
@@ -287,8 +287,8 @@ const startGame = async (client, channel, user, message) => {
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
       if(params.length != 3)
       {
-        client.say(channel, `[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ] [ 1 | 2 ]"`);
-        console.log(`[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ] [ 1 | 2 ]"`);
+        client.say(channel, `[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
+        console.log(`[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
         return;
       }
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
@@ -301,12 +301,6 @@ const startGame = async (client, channel, user, message) => {
       return;
     }
   }
-
-  // Line (six numbers) bets pay 5 to 1. 
-  // Dozen bets pay 2 to 1. 
-  // Column bets pay 2 to 1. 
-  // Half bets (18 numbers) pay even money. 
-  // Red, black, odd and even bets pay even money.`);
 
   // format result message
   randomNumber == 37 ? randomNumber = String('00') : randomNumber = String(randomNumber);
@@ -375,7 +369,7 @@ const hasValidThird = (channel, selectedNumber, username) => {
   return true;
 }
 const hasWonThirdBet = (randomNumber, selectedNumber, sel) => {
-  if(sel === 1)
+  if(sel == 1)
   {
     if(selectedNumber == 1 && (randomNumber < 13 && randomNumber != 0)) return true;
     else if (selectedNumber == 2 && (randomNumber < 25)) return true;
