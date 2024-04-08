@@ -127,15 +127,15 @@ const startGame = async (client, channel, user, message) => {
   // check if the user has enough points for the wager
   if(wager > points)
   {
-    client.say(channel, `[BOT] @${user.username} You cant wager ${wager}. You only have ${points} points.`);
-    console.log(`[BOT] @${user.username} You cant wager ${wager}. You only have ${points} points.`);
+    client.say(channel, `[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
+    console.log(`[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
     return;
   }
   // min wager is 100 points
   if(wager < 100)
   {
-    client.say(channel, `[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
-    console.log(`[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
+    client.say(channel, `[BOT] @${user.username} The minimum wager is 100 points.`);
+    console.log(`[BOT] @${user.username} The minimum wager is 100 points.`);
     return;
   }
   
