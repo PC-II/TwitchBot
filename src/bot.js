@@ -118,7 +118,7 @@ const giveWatchPoints = async (userRef, snap, channel) => {
 
   update(userRef, {points: snap.val().points + earnedPoints, last_left: now});
 
-  console.log(`[BOT] [${channel}] ${snap.val().username} earned ${earnedPoints} points by watching the stream.`);
+  console.log(`[BOT] [${channel}] ${snap.val().username} earned ${earnedPoints} points by hanging out here.`);
 
   return earnedPoints;
 }
@@ -556,7 +556,7 @@ const main = async () => {
       if(snap.exists())
       {
         const earnedPoints = await giveWatchPoints(userRef, snap, channel);
-        await client.say(channel, `[BOT] ${user} earned ${earnedPoints} points by watching the stream!`)
+        await client.say(channel, `[BOT] ${user} earned ${earnedPoints} points by hanging out in the chat!`);
       }
 
     });
