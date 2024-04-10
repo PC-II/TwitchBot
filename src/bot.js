@@ -8,6 +8,9 @@ import { getDatabase, ref, update, set, get } from 'firebase/database';
 const username = 'pc_ii';
 const oauthToken = process.env.OAUTHTOKEN;
 const channels = [ 'pc_ii' ];
+const spamCooldown = 5000; // in ms
+const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
 
 // Create a new Twitch client
 const client = new tmi.client({
@@ -55,41 +58,77 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-
-const checkDatabase = async (channel, user) => {
-  const userRef = ref(db, `users/${user.username}`);
-  const snap = await get(userRef);
+const checkDatabase = async (channel, user, userRef, snap) => {
 
   const newUser = {
+    last_chat: Date.now(),
+    numberOfRecentChats: 0,
     last_played: "",
     points: 1000,
     username: user.username,
+    last_joined: Date.now(),
+    last_left: "",
   }
 
-  if(!snap.val())
+  if(!snap.exists())
   {
     await set(userRef, newUser);
-    client.say(channel, `[BOT] @${user.username} Your account was created! You have 1000 points.`);
-    console.log(`[BOT] @${user.username} Your account was created! You have 1000 points.`);
+    await client.say(channel, `[BOT] @${user.username} Your account was created! Enjoy your free 1000 points. You get points for chatting 👍.`);
+    console.log(`[BOT] [${channel}] @${user.username} account created.`);
+
+    return await get(userRef);
+  }
+  return snap;
+}
+
+const isSpamming = async (userRef, snap) => {
+  const lastChat = snap.val().last_chat;
+  const nRecentChats = snap.val().numberOfRecentChats;
+
+  // check if they are spamming
+  if(nRecentChats < 1)
+  {
+    await update(userRef, {numberOfRecentChats: nRecentChats + 1});
+    return false;
+  }
+  else
+  {
+    if(Date.now() - lastChat >= spamCooldown)
+    {
+      await update(userRef, {last_chat: Date.now(), numberOfRecentChats: 0});
+      return false;
+    }
+    else
+      return true;
   }
 }
 
-const givePoints = async (user) => {
-  const userRef = ref(db, `users/${user.username}`);
-  const snap = await get(userRef);
+const giveChatPoints = async (userRef, snap) => {
 
-  // ADD A LIMIT TO HOW MANY POINTS SOMEONE CAN GET IN A DAY
+  // limit how many points someone can have in one day here
+
   update(userRef, {
     points: snap.val().points + 100,
   });
 }
 
-const startGame = async (client, channel, user, message) => {
+const giveWatchPoints = async (userRef, snap, channel) => {
+  const now = Date.now();
+  const earnedPoints = Math.floor((now - snap.val().last_joined) / 1000);
+
+  update(userRef, {points: snap.val().points + earnedPoints, last_left: now});
+
+  console.log(`[BOT] [${channel}] ${snap.val().username} earned ${earnedPoints} points by watching the stream.`);
+
+  return earnedPoints;
+}
+
+const startGame = async (client, channel, user, message, userRef, snap) => {
   const params = message.split(' ');
   if(params.length < 3)
   {
     client.say(channel, `[BOT] @${user.username} Invalid request`);
-    console.log(`[BOT] @${user.username} Invalid request`);
+    console.log(`[BOT] [${channel}] @${user.username} Invalid request`);
     return;
   }
   
@@ -102,41 +141,38 @@ const startGame = async (client, channel, user, message) => {
     if(entry === '')
     {
       client.say(channel, `[BOT] @${user.username} There are too many spaces or something was left blank.`);
-      console.log(`[BOT] @${user.username} There are too many spaces or something was left blank.`)
+      console.log(`[BOT] [${channel}] @${user.username} There are too many spaces or something was left blank.`)
       return;
     }
     if(entry.includes(','))
     {
       client.say(channel, `[BOT] @${user.username} The request should not contain any commas.`);
-      console.log(`[BOT] @${user.username} The request should not contain any commas.`);
+      console.log(`[BOT] [${channel}] @${user.username} The request should not contain any commas.`);
       return;
     }
   }   
   
-  // Connect to database and retrieve points
-  const userRef = ref(db, `users/${user.username}`);
-  const snap = await get(userRef);
   const points = snap.val().points;
 
   // check syntax of wager
   if(isNaN(wager) || !Number.isInteger(Number(wager)) || wager < 0)
   {
     client.say(channel, `[BOT] @${user.username} "${wager}" is not a valid wager.`);
-    console.log(`[BOT] @${user.username} "${wager}" is not a valid wager.`);
+    console.log(`[BOT] [${channel}] @${user.username} "${wager}" is not a valid wager.`);
     return;
   }
   // check if the user has enough points for the wager
   if(wager > points)
   {
     client.say(channel, `[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
-    console.log(`[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
+    console.log(`[BOT] [${channel}] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
     return;
   }
   // min wager is 100 points
   if(wager < 100)
   {
     client.say(channel, `[BOT] @${user.username} The minimum wager is 100 points.`);
-    console.log(`[BOT] @${user.username} The minimum wager is 100 points.`);
+    console.log(`[BOT] [${channel}] @${user.username} The minimum wager is 100 points.`);
     return;
   }
   
@@ -157,7 +193,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Single bet should be: "!play [AMOUNT] single [NUMBER]"`);
-        console.log(`[BOT] @${user.username} A Single bet should be: "!play [AMOUNT] single [NUMBER]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Single bet should be: "!play [AMOUNT] single [NUMBER]"`);
         return;
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
@@ -171,7 +207,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 5)
       {
         client.say(channel, `[BOT] @${user.username} A Double bet should be: "!play [AMOUNT] double [NUMBER] [NUMBER]"`);
-        console.log(`[BOT] @${user.username} A Double bet should be: "!play [AMOUNT] double [NUMBER] [NUMBER]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Double bet should be: "!play [AMOUNT] double [NUMBER] [NUMBER]"`);
         return;
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
@@ -185,7 +221,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 6)
       {
         client.say(channel, `[BOT] @${user.username} A Triple bet should be: "!play [AMOUNT] triple [NUMBER] [NUMBER] [NUMBER]"`);
-        console.log(`[BOT] @${user.username} A Triple bet should be: "!play [AMOUNT] triple [NUMBER] [NUMBER] [NUMBER]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Triple bet should be: "!play [AMOUNT] triple [NUMBER] [NUMBER] [NUMBER]"`);
         return;
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
@@ -199,7 +235,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 7)
       {
         client.say(channel, `[BOT] @${user.username} A Quad bet should be: "!play [AMOUNT] quad [NUMBER] [NUMBER] [NUMBER] [NUMBER]"`);
-        console.log(`[BOT] @${user.username} A Quad bet should be: "!play [AMOUNT] quad [NUMBER] [NUMBER] [NUMBER] [NUMBER]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Quad bet should be: "!play [AMOUNT] quad [NUMBER] [NUMBER] [NUMBER] [NUMBER]"`);
         return;
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
@@ -213,14 +249,14 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Line bet is where the [NUMBER] is the start of your six numbers: "!play [AMOUNT] line [ 0 - 30 ]"`);
-        console.log(`[BOT] @${user.username} A Line bet is where the [NUMBER] is the start of your six numbers: "!play [AMOUNT] line [ 0 - 30 ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Line bet is where the [NUMBER] is the start of your six numbers: "!play [AMOUNT] line [ 0 - 30 ]"`);
         return;
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
       if(params.at(3) === '00' || params.at(3) > 30)  // custom rules for line bets
       {
         client.say(channel, `[BOT] @${user.username} Only 0-30 are valid numbers for a Line bet.`);
-        console.log(`[BOT] @${user.username} Only 0-30 are valid numbers for a Line bet.`);
+        console.log(`[BOT] [${channel}] @${user.username} Only 0-30 are valid numbers for a Line bet.`);
         return;
       }
 
@@ -232,7 +268,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Dozen bet should be: "!play [AMOUNT] dozen [ 1 | 2 | 3 ]"`);
-        console.log(`[BOT] @${user.username} A Dozen bet should be: "!play [AMOUNT] dozen [ 1 | 2 | 3 ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Dozen bet should be: "!play [AMOUNT] dozen [ 1 | 2 | 3 ]"`);
         return;
       }
       if(!hasValidThird(channel, params.at(3), user.username)) return;
@@ -245,7 +281,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Column bet should be: "!play [AMOUNT] column [ 1 | 2 | 3 ]"`);
-        console.log(`[BOT] @${user.username} A Column bet should be: "!play [AMOUNT] column [ 1 | 2 | 3 ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Column bet should be: "!play [AMOUNT] column [ 1 | 2 | 3 ]"`);
         return;
       }
       if(!hasValidThird(channel, params.at(3), user.username)) return;
@@ -258,7 +294,7 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 4)
       {
         client.say(channel, `[BOT] @${user.username} A Half bet should be: "!play [AMOUNT] half [ 1 | 2 ]"`);
-        console.log(`[BOT] @${user.username} A Half bet should be: "!play [AMOUNT] half [ 1 | 2 ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Half bet should be: "!play [AMOUNT] half [ 1 | 2 ]"`);
         return;
       }
       if(!hasValidHalf(channel, params.at(3), user.username, 1)) return;
@@ -271,20 +307,12 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 3)
       {
         client.say(channel, `[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
-        console.log(`[BOT] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} A Red or Black bet should be: "!play [AMOUNT] [ red | black ]"`);
         return;
       }
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
 
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
-
-      // adding a color description to the results
-      if(randomNumber == 0 || randomNumber == 37)
-        strRes = ' (Green)';
-      else if(randomNumber % 2 == 1)
-        strRes = ' (Red)';
-      else if(randomNumber %2 == 0)
-        strRes = ' (Black)';
     break;
 
     case 'even':
@@ -292,24 +320,30 @@ const startGame = async (client, channel, user, message) => {
       if(params.length != 3)
       {
         client.say(channel, `[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
-        console.log(`[BOT] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
+        console.log(`[BOT] [${channel}] @${user.username} An Odd or Even bet should be: "!play [AMOUNT] [ odd | even ]"`);
         return;
       }
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
 
-      win = hasWonHalfBet(randomNumber, params.at(2), 2);
+      win = hasWonHalfBet(randomNumber, params.at(2), 3);
     break;
 
     default:
     {
       client.say(channel, `[BOT] @${user.username} There is no bet type called "${selection}"`);
-      console.log(`[BOT] @${user.username} There is no bet type called "${selection}"`);
+      console.log(`[BOT] [${channel}] @${user.username} There is no bet type called "${selection}"`);
       return;
     }
   }
 
   // format result message
   randomNumber == 37 ? randomNumber = String('00') : randomNumber = String(randomNumber);
+  if(randomNumber == 0 || randomNumber == 37)
+    strRes = ` (Green)`;
+  else if(redNumbers.includes(randomNumber))
+    strRes = ` (Red)`;
+  else
+    strRes = ` (Black)`;
 
   // reward points
   if(win)
@@ -317,13 +351,13 @@ const startGame = async (client, channel, user, message) => {
     const winnings = wager * multiplier;
     update(userRef, {points: points + winnings});
     client.say(channel, `[BOT] @${user.username} The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
-    console.log(`[BOT] @${user.username} The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
+    console.log(`[BOT] [${channel}] @${user.username} The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
   }
   else
   {
     update(userRef, {points: points - wager});
     client.say(channel, `[BOT] @${user.username} The number was ${randomNumber}${strRes}. Better luck next time.`);
-    console.log(`[BOT] @${user.username} The number was ${randomNumber}${strRes}. Better luck next time.`)
+    console.log(`[BOT] [${channel}] @${user.username} The number was ${randomNumber}${strRes}. Better luck next time.`)
   }
 
   // update the last time a user played
@@ -335,7 +369,7 @@ const hasValidInsideNumbers = (channel, params, username) => {
     if((isNaN(params.at(i)) || !Number.isInteger(Number(params.at(i))) || params.at(i) < 0 || params.at(i) > 36) && params.at(i) !== "00" || params.at(i).length > 2)
     {
       client.say(channel, `[BOT] @${username} "${params.at(i)}" is not a valid number. 0-36 or 00 are valid. (Only 0-30 on Line bets)`);
-      console.log(`[BOT] @${username} "${params.at(i)}" is not a valid number. 0-36 or 00 are valid. (Only 0-30 on Line bets)`);
+      console.log(`[BOT] [${channel}] @${username} "${params.at(i)}" is not a valid number. 0-36 or 00 are valid. (Only 0-30 on Line bets)`);
       return false;
     }
     for(let j = i + 1; j < params.length; j++)
@@ -343,7 +377,7 @@ const hasValidInsideNumbers = (channel, params, username) => {
       if(String(params.at(i)) === String(params.at(j)))
       {
         client.say(channel, `[BOT] @${username} You can't have repeating numbers.`);
-        console.log(`[BOT] @${username} You can't have repeating numbers.`);
+        console.log(`[BOT] [${channel}] @${username} You can't have repeating numbers.`);
         return false;
       }
     }
@@ -369,7 +403,7 @@ const hasValidThird = (channel, selectedNumber, username) => {
   if(selectedNumber < 1 || selectedNumber > 3 || isNaN(selectedNumber) || !Number.isInteger(Number(selectedNumber)))
   {
     client.say(channel, `[BOT] @${username} "${selectedNumber}" is not a valid number. Only 1, 2, or 3 are valid numbers for Dozen and Column bets.`);
-    console.log(`[BOT] @${username} "${selectedNumber}" is not a valid number. Only 1, 2, or 3 are valid numbers for Dozen and Column bets.`)
+    console.log(`[BOT] [${channel}] @${username} "${selectedNumber}" is not a valid number. Only 1, 2, or 3 are valid numbers for Dozen and Column bets.`)
     return false;
   }
   return true;
@@ -377,8 +411,6 @@ const hasValidThird = (channel, selectedNumber, username) => {
 const hasWonThirdBet = (randomNumber, selectedNumber, sel) => {
   if(sel == 1)
   {
-    console.log(`SELECTED: ${selectedNumber}`);
-    console.log(`RANDOM: ${randomNumber}`);
     if(selectedNumber == 1 && randomNumber > 0 && randomNumber < 13) return true;
     else if (selectedNumber == 2 && randomNumber > 12 && randomNumber < 25) return true;
     else if (selectedNumber == 3 && randomNumber > 24 && randomNumber < 37) return true;
@@ -402,7 +434,7 @@ const hasValidHalf = (channel, selected, username, sel) => {
     if(selected < 0 || selected > 2 || isNaN(selected) || !Number.isInteger(Number(selected)))
     {
       client.say(channel, `[BOT] @${username} "${selected}" is not a valid number. Only 1 or 2 are valid numbers for Half bets`);
-      console.log(`[BOT] @${username} "${selected}" is not a valid number. Only 1 or 2 are valid numbers for Half bets`);
+      console.log(`[BOT] [${channel}] @${username} "${selected}" is not a valid number. Only 1 or 2 are valid numbers for Half bets`);
       return false;
     }
     return true;
@@ -412,7 +444,7 @@ const hasValidHalf = (channel, selected, username, sel) => {
     if(selected !== 'red' && selected !== 'black' && selected !== 'even' && selected !== 'odd')
     {
       client.say(channel, `[BOT] @${username} "${selected}" is not a valid selection. Only "red", "black", "even", or "odd" is valid for this bet.`);
-      console.log(`[BOT] @${username} "${selected}" is not a valid selection. Only "red", "black", "even", or "odd" is valid for this bet.`);
+      console.log(`[BOT] [${channel}] @${username} "${selected}" is not a valid selection. Only "red", "black", "even", or "odd" is valid for this bet.`);
       return false;
     }
     return true;
@@ -425,10 +457,16 @@ const hasWonHalfBet = (randomNumber, selected, sel) => {
     else if(selected == 2 && randomNumber < 37) return true;
     else return false;
   }
+  else if (sel == 2)
+  {
+    if(randomNumber != 0 && randomNumber != 37 && selected === 'red' && redNumbers.includes(randomNumber)) return true;
+    else if(randomNumber != 0 && randomNumber != 37 && selected === 'black' && blackNumbers.includes(randomNumber)) return true;
+    else return false;
+  }
   else
   {
-    if(randomNumber != 0 && randomNumber != 37 && (selected === 'red' || selected === 'odd') && randomNumber % 2 == 1) return true;
-    else if(randomNumber != 0 && randomNumber != 37 && (selected === 'black' || selected === 'even') && randomNumber % 2 == 0) return true;
+    if(randomNumber != 0 && randomNumber != 37 && selected === 'odd' && randomNumber % 2 == 1) return true;
+    else if(randomNumber != 0 && randomNumber != 37 &&  selected === 'even' && randomNumber % 2 == 0) return true;
     else return false;
   }
 }
@@ -445,63 +483,82 @@ const main = async () => {
     client.on('chat', async (channel, user, message, self) => {
       if (self) return; // Ignore messages from our own bot
 
-      // check if the user is already in the database
-      await checkDatabase(channel, user)
-
       message = message.toLowerCase();
       if(message.startsWith('!bot'))
       {
-        console.log(`${user.username}: ${message}`);
+        console.log(`[${channel}] ${user.username}: ${message}`);
         const response = await generateResponse(message);
         client.say(channel, `[BOT] ${response}`);
-        console.log(response);
-        givePoints(user);
-      }
-      else if(message.startsWith('!play'))
-      {
-        startGame(client, channel, user, message);
+        console.log(` [${channel}] OpenAI: ${response}`);
+        giveChatPoints(userRef, snap);
         return;
       }
       else if(message.startsWith('!help'))
       {
-        client.say(channel, 
-        `[BOT] To play, type "!play [AMOUNT] [BET TYPE] [NUMBER(S)]". 
-        Ex: <!play 14000 quad 23 14 12 21>
-        Single number bets pay 35 to 1. 
-        Double number bets pay 17 to 1. 
-        Triple number bets pay 11 to 1. 
-        Quad number bets pay 8 to 1. 
-        Line (six numbers) bets pay 5 to 1. 
-        Dozen bets pay 2 to 1. 
-        Column bets pay 2 to 1. 
-        Half bets (18 numbers) pay even money. 
-        Red, black, odd and even bets pay even money.`);
+        client.say(channel, `[BOT] @${user.username} https://pcii.lol`);
+        return;
+      }
+
+      // get snapshot of user's info in database
+      const userRef = ref(db, `users/${user.username}`);
+      let snap = await get(userRef);
+      
+      // check if the user is already in the database
+      snap = await checkDatabase(channel, user, userRef, snap);
+
+      // check if theyre spamming
+      if(await isSpamming(userRef, snap))
+      {
+        await update(userRef, {last_chat: Date.now(), points: Math.floor(snap.val().points / 2)});
+        client.say(channel, `[BOT] @${user.username} Stop spamming for 5 seconds! You lost half your points!`);
+        console.log(`[BOT] [${channel}] @${user.username} is spamming.`);
+        return;
+      }
+      
+      if(message.startsWith('!play'))
+      {
+        startGame(client, channel, user, message, userRef, snap);
         return;
       }
       else if(message.startsWith('!bal'))
       {
-        const userRef = ref(db, `users/${user.username}`);
-        const snap = await get(userRef);
         client.say(channel, `[BOT] @${user.username} You have ${snap.val().points} points.`);
         return;
       }
 
-      givePoints(user);   // gives points for chatting
+      giveChatPoints(userRef, snap);   // gives points for chatting
 
     });
 
     // notify streamer when someone joined and left the channel
     // this will also be used to give passive watching points
-    // client.on('join', async (channel, user, self) => {
-    //   if(self) return; // Ignore join action from our own bot
-    //   client.say(channel, `[BOT] Welcome ${user}!`);
-    //   console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
-    // });
-    // client.on('part', async (channel, user, self) => {
-    //   if(self) return;
-    //   client.say(channel, `[BOT] Goodbye ${user}!`);
-    //   console.log(`[BOT] [${channel}] ${user} Left the channel at ${new Date()}`);
-    // });
+    client.on('join', async (channel, user, self) => {
+      if(self) return; // Ignore join action from our own bot
+
+      client.say(channel, `[BOT] Welcome ${user}!`);
+      console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
+
+      const userRef = ref(db, `users/${user}`);
+      const snap = await get(userRef);
+
+      if(snap.exists())
+        update(userRef, {last_joined: Date.now()});
+    });
+    client.on('part', async (channel, user, self) => {
+      if(self) return;
+
+      console.log(`[BOT] [${channel}] ${user} Left the channel at ${new Date()}`);
+
+      const userRef = ref(db, `users/${user}`);
+      const snap = await get(userRef);
+
+      if(snap.exists())
+      {
+        const earnedPoints = await giveWatchPoints(userRef, snap, channel);
+        await client.say(channel, `[BOT] ${user} earned ${earnedPoints} points by watching the stream!`)
+      }
+
+    });
   }
   catch(err)
   {
