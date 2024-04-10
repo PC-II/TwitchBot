@@ -337,13 +337,13 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
   }
 
   // format result message
-  randomNumber == 37 ? randomNumber = String('00') : randomNumber = String(randomNumber);
   if(randomNumber == 0 || randomNumber == 37)
     strRes = ` (Green)`;
   else if(redNumbers.includes(randomNumber))
     strRes = ` (Red)`;
   else
     strRes = ` (Black)`;
+  randomNumber == 37 ? randomNumber = String('00') : randomNumber = String(randomNumber);
 
   // reward points
   if(win)
