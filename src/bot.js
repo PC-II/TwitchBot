@@ -114,7 +114,7 @@ const giveChatPoints = async (userRef, snap) => {
 
 const giveWatchPoints = async (userRef, snap, channel) => {
   const now = Date.now();
-  const earnedPoints = Math.floor((now - snap.val().last_joined) / 1000);
+  const earnedPoints = Math.floor((now - snap.val().last_joined) / 500);
 
   update(userRef, {points: snap.val().points + earnedPoints, last_left: now});
 
@@ -517,6 +517,7 @@ const main = async () => {
       
       if(message.startsWith('!play'))
       {
+        console.log(`[USER] [${channel}] ${user.username}: ${message}`);
         startGame(client, channel, user, message, userRef, snap);
         return;
       }
@@ -533,7 +534,7 @@ const main = async () => {
     // notify streamer when someone joined and left the channel
     // this will also be used to give passive watching points
     client.on('join', async (channel, user, self) => {
-      if(self) return; // Ignore join action from our own bot
+      if(self || channel.substring(1) == user) return; // Ignore join action from our own bot
 
       client.say(channel, `[BOT] Welcome ${user}!`);
       console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
@@ -545,7 +546,7 @@ const main = async () => {
         update(userRef, {last_joined: Date.now()});
     });
     client.on('part', async (channel, user, self) => {
-      if(self) return;
+      if(self || channel.substring(1) == user) return;
 
       console.log(`[BOT] [${channel}] ${user} Left the channel at ${new Date()}`);
 
