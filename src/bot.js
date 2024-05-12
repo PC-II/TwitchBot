@@ -86,7 +86,7 @@ const isSpamming = async (userRef, snap) => {
   const nRecentChats = snap.val().numberOfRecentChats;
 
   // check if they are spamming
-  if(nRecentChats < 1)
+  if(nRecentChats < 2)
   {
     await update(userRef, {numberOfRecentChats: nRecentChats + 1});
     return false;
@@ -124,7 +124,12 @@ const giveWatchPoints = async (userRef, snap, channel) => {
 }
 
 const startGame = async (client, channel, user, message, userRef, snap) => {
-  const params = message.split(' ');
+  let params = message.split(' ');
+  if(params.length == 2)
+  {
+    message = generateRandomPlay(params.at(1));
+    params = message.split(' ');
+  }
   if(params.length < 3)
   {
     client.say(channel, `[BOT] @${user.username} Invalid request`);
@@ -164,15 +169,15 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
   // check if the user has enough points for the wager
   if(wager > points)
   {
-    client.say(channel, `[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
-    console.log(`[BOT] [${channel}] @${user.username} Broke Boy Alert 🚨🚨🚨\nIt costs 100 points to play and you have ${points} points.`);
+    client.say(channel, `[BOT] @${user.username} You cant wager ${wager} points since you only have ${points} points to spend.`);
+    console.log(`[BOT] [${channel}] @${user.username} You cant wager ${wager} points since you only have ${points} points to spend.`);
     return;
   }
   // min wager is 100 points
   if(wager < 100)
   {
-    client.say(channel, `[BOT] @${user.username} The minimum wager is 100 points.`);
-    console.log(`[BOT] [${channel}] @${user.username} The minimum wager is 100 points.`);
+    client.say(channel, `[BOT] @${user.username} Broke Boy Alert 🚨🚨🚨 The minimum wager is 100 points`);
+    console.log(`[BOT] [${channel}] @${user.username} Broke Boy Alert 🚨🚨🚨 The minimum wager is 100 points`);
     return;
   }
   
@@ -184,6 +189,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
   let win = false;
   let multiplier = 1;
   let strRes = '';
+  let choice = ' ';
   
   // check what the selection was
   switch(selection)
@@ -198,6 +204,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
+      choice = `${params.at(3)}`;
       multiplier = 35;
       win = hasWonInsideBet(randomNumber, user.username);
     break;
@@ -212,6 +219,11 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
+      for(let i = 3; i < params.length; i++)
+      {
+        choice += `${params.at(i)}`;
+        if(i != params.length - 1) choice += ' ';
+      }
       multiplier = 17;
       win = hasWonInsideBet(randomNumber, user.username);
     break;
@@ -226,6 +238,11 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
+      for(let i = 3; i < params.length; i++)
+      {
+        choice += `${params.at(i)}`;
+        if(i != params.length - 1) choice += ' ';
+      }
       multiplier = 11;
       win = hasWonInsideBet(randomNumber, user.username);
     break;
@@ -240,6 +257,11 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidInsideNumbers(channel, params, user.username)) return;
 
+      for(let i = 3; i < params.length; i++)
+      {
+        choice += `${params.at(i)}`;
+        if(i != params.length - 1) choice += ' ';
+      }
       multiplier = 8;
       win = hasWonInsideBet(randomNumber, user.username);
     break;
@@ -260,6 +282,11 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
         return;
       }
 
+      for(let i = 3; i < params.length; i++)
+      {
+        choice += `${params.at(i)}`;
+        if(i != params.length - 1) choice += ' ';
+      }
       multiplier = 5;
       win = hasWonLineBet(randomNumber, params.at(3));
     break;
@@ -273,6 +300,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidThird(channel, params.at(3), user.username)) return;
 
+      choice = `${params.at(3)}`;
       multiplier = 2;
       win = hasWonThirdBet(randomNumber, params.at(3), 1);
     break;
@@ -286,6 +314,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidThird(channel, params.at(3), user.username)) return;
 
+      choice = `${params.at(3)}`;
       multiplier = 2;
       win = hasWonThirdBet(randomNumber, params.at(3), 2);
     break;
@@ -299,6 +328,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidHalf(channel, params.at(3), user.username, 1)) return;
 
+      choice = `${params.at(3)}`;
       win = hasWonHalfBet(randomNumber, params.at(3), 1);
     break;
 
@@ -312,6 +342,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
 
+      choice = '';
       win = hasWonHalfBet(randomNumber, params.at(2), 2);
     break;
 
@@ -325,6 +356,7 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
       }
       if(!hasValidHalf(channel, params.at(2), user.username, 2)) return;
 
+      choice = '';
       win = hasWonHalfBet(randomNumber, params.at(2), 3);
     break;
 
@@ -350,14 +382,14 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
   {
     const winnings = wager * multiplier;
     update(userRef, {points: points + winnings});
-    client.say(channel, `[BOT] @${user.username} The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
-    console.log(`[BOT] [${channel}] @${user.username} The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
+    client.say(channel, `[BOT] @${user.username} You wagered ${wager} points on "${selection}${choice}". The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
+    console.log(`[BOT] [${channel}] @${user.username} You wagered ${wager} points on "${selection}${choice}". The number was ${randomNumber}${strRes}. You won ${winnings} points! 🥳🎊🎉🎊🎉🎉`);
   }
   else
   {
     update(userRef, {points: points - wager});
-    client.say(channel, `[BOT] @${user.username} The number was ${randomNumber}${strRes}. Better luck next time.`);
-    console.log(`[BOT] [${channel}] @${user.username} The number was ${randomNumber}${strRes}. Better luck next time.`)
+    client.say(channel, `[BOT] @${user.username} You wagered ${wager} points on "${selection} ${choice}". The number was ${randomNumber}${strRes}. Better luck next time.`);
+    console.log(`[BOT] [${channel}] @${user.username} You wagered ${wager} points on "${selection} ${choice}". The number was ${randomNumber}${strRes}. Better luck next time.`)
   }
 
   // update the last time a user played
@@ -471,72 +503,72 @@ const hasWonHalfBet = (randomNumber, selected, sel) => {
   }
 }
 
-const generateRandomPlay = () => {
+const generateRandomPlay = (wager) => {
   const r = Math.floor(Math.random() * 10);
   let first = Math.floor(Math.random() * 38);
   if(first == 37) first = String('00');
   switch(r)
   {
     case 0:
-      return `!play 100 single ${first}`;
+      return `!play ${wager} single ${first}`;
     case 1:
       do
       {
         var second = Math.floor(Math.random() * 38);
       }while(second === first);
       if(second == 37) second = String('00');
-      return `!play 100 double ${first} ${second}`;
+      return `!play ${wager} double ${first} ${second}`;
     case 2:
       do
       {
         var second = Math.floor(Math.random() * 38);
       }while(second === first);
-      if(second == 37) second = String('00');
       do
       {
         var third = Math.floor(Math.random() * 38);
       }while(second === third || third === first);
+      if(second == 37) second = String('00');
       if(third == 37) third = String('00');
-      return `!play 100 triple ${first} ${second} ${third}`;
+      return `!play ${wager} triple ${first} ${second} ${third}`;
     case 3:
       do
       {
         var second = Math.floor(Math.random() * 38);
       }while(second === first);
-      if(second == 37) second = String('00');
       do
       {
         var third = Math.floor(Math.random() * 38);
       }while(second === third || third === first);
-      if(third == 37) third = String('00');
       do
       {
         var fourth = Math.floor(Math.random() * 38);
       }while(fourth === third || fourth === second || fourth === first);
+      if(second == 37) second = String('00');
+      if(third == 37) third = String('00');
       if(fourth == 37) fourth = String('00');
-      return `!play 100 quad ${first} ${second} ${third} ${fourth}`;
+      return `!play ${wager} quad ${first} ${second} ${third} ${fourth}`;
     case 4:
       first = Math.floor(Math.random() * 31);
-      return `!play 100 line ${first}`;
+      return `!play ${wager} line ${first}`;
     case 5:
       first = Math.floor(Math.random() * 2) + 1;
-      return `!play 100 dozen ${first}`;
+      return `!play ${wager} dozen ${first}`;
     case 6:
       first = Math.floor(Math.random() * 2) + 1;
-      return `!play 100 column ${first}`;
+      return `!play ${wager} column ${first}`;
     case 7:
       first = Math.floor(Math.random()) + 1;
-      return `!play 100 half ${first}`;
+      return `!play ${wager} half ${first}`;
     case 8:
       first = Math.floor(Math.random() * 2) + 1;
       if(first === 1) first = String('red');
       else first = String('black');
-      return `!play 100 ${first}`;
+      return `!play ${wager} ${first}`;
     case 9:
       first = Math.floor(Math.random() * 2) + 1;
       if(first === 1) first = String('odd');
       else first = String('even');
-      return `!play 100 ${first}`;
+      return `!play ${wager} ${first}`;
   }
 }
 
@@ -591,7 +623,7 @@ const main = async () => {
         // default game mode
         if(message.trimEnd() == '!play')
         {
-          message = generateRandomPlay();
+          message = generateRandomPlay(100);
         }
         startGame(client, channel, user, message, userRef, snap);
         return;
