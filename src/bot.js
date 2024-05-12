@@ -471,6 +471,75 @@ const hasWonHalfBet = (randomNumber, selected, sel) => {
   }
 }
 
+const generateRandomPlay = () => {
+  const r = Math.floor(Math.random() * 10);
+  let first = Math.floor(Math.random() * 38);
+  if(first == 37) first = String('00');
+  switch(r)
+  {
+    case 0:
+      return `!play 100 single ${first}`;
+    case 1:
+      do
+      {
+        var second = Math.floor(Math.random() * 38);
+      }while(second === first);
+      if(second == 37) second = String('00');
+      return `!play 100 double ${first} ${second}`;
+    case 2:
+      do
+      {
+        var second = Math.floor(Math.random() * 38);
+      }while(second === first);
+      if(second == 37) second = String('00');
+      do
+      {
+        var third = Math.floor(Math.random() * 38);
+      }while(second === third || third === first);
+      if(third == 37) third = String('00');
+      return `!play 100 triple ${first} ${second} ${third}`;
+    case 3:
+      do
+      {
+        var second = Math.floor(Math.random() * 38);
+      }while(second === first);
+      if(second == 37) second = String('00');
+      do
+      {
+        var third = Math.floor(Math.random() * 38);
+      }while(second === third || third === first);
+      if(third == 37) third = String('00');
+      do
+      {
+        var fourth = Math.floor(Math.random() * 38);
+      }while(fourth === third || fourth === second || fourth === first);
+      if(fourth == 37) fourth = String('00');
+      return `!play 100 quad ${first} ${second} ${third} ${fourth}`;
+    case 4:
+      first = Math.floor(Math.random() * 31);
+      return `!play 100 line ${first}`;
+    case 5:
+      first = Math.floor(Math.random() * 2) + 1;
+      return `!play 100 dozen ${first}`;
+    case 6:
+      first = Math.floor(Math.random() * 2) + 1;
+      return `!play 100 column ${first}`;
+    case 7:
+      first = Math.floor(Math.random()) + 1;
+      return `!play 100 half ${first}`;
+    case 8:
+      first = Math.floor(Math.random() * 2) + 1;
+      if(first === 1) first = String('red');
+      else first = String('black');
+      return `!play 100 ${first}`;
+    case 9:
+      first = Math.floor(Math.random() * 2) + 1;
+      if(first === 1) first = String('odd');
+      else first = String('even');
+      return `!play 100 ${first}`;
+  }
+}
+
 // Connect to the Twitch IRC server
 const main = async () => {
   try
@@ -518,6 +587,12 @@ const main = async () => {
       if(message.startsWith('!play'))
       {
         console.log(`[USER] [${channel}] ${user.username}: ${message}`);
+        
+        // default game mode
+        if(message.trimEnd() == '!play')
+        {
+          message = generateRandomPlay();
+        }
         startGame(client, channel, user, message, userRef, snap);
         return;
       }
