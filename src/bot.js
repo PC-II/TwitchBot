@@ -137,7 +137,11 @@ const startGame = async (client, channel, user, message, userRef, snap) => {
     return;
   }
   
-  const wager = params.at(1);
+  let wager = params.at(1);
+  if(wager === 'all')
+  {
+    wager = snap.val().points;
+  }
   const selection = params.at(2);
 
   // check if any of the inputs are blank
