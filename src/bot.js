@@ -689,32 +689,32 @@ const main = async () => {
 
     // notify streamer when someone joined and left the channel
     // this will also be used to give passive watching points
-    // client.on('join', async (channel, user, self) => {
-    //   if(self || channel.substring(1) == user) return; // Ignore join action from our own bot
+    client.on('join', async (channel, user, self) => {
+      if(self || channel.substring(1) == user) return; // Ignore join action from our own bot
 
-    //   client.say(channel, `[BOT] Welcome ${user}!`);
-    //   console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
+      client.say(channel, `[BOT] Welcome ${user}!`);
+      console.log(`[BOT] [${channel}] ${user} Entered the channel at ${new Date()}`);
 
-    //   const userRef = ref(db, `users/${user}`);
-    //   const snap = await get(userRef);
+      const userRef = ref(db, `users/${user}`);
+      const snap = await get(userRef);
 
-    //   if(snap.exists())
-    //     update(userRef, {last_joined: Date.now()});
-    // });
-    // client.on('part', async (channel, user, self) => {
-    //   if(self || channel.substring(1) == user) return;
+      if(snap.exists())
+        update(userRef, {last_joined: Date.now()});
+    });
+    client.on('part', async (channel, user, self) => {
+      if(self || channel.substring(1) == user) return;
 
-    //   console.log(`[BOT] [${channel}] ${user} Left the channel at ${new Date()}`);
+      console.log(`[BOT] [${channel}] ${user} Left the channel at ${new Date()}`);
 
-    //   const userRef = ref(db, `users/${user}`);
-    //   const snap = await get(userRef);
+      const userRef = ref(db, `users/${user}`);
+      const snap = await get(userRef);
 
-    //   if(snap.exists())
-    //   {
-    //     const earnedPoints = await giveWatchPoints(userRef, snap, channel);
-    //     await client.say(channel, `[BOT] ${user} earned ${earnedPoints} points by hanging out in the chat!`);
-    //   }
-    // });
+      if(snap.exists())
+      {
+        const earnedPoints = await giveWatchPoints(userRef, snap, channel);
+        await client.say(channel, `[BOT] ${user} earned ${earnedPoints} points by hanging out in the chat!`);
+      }
+    });
   }
   catch(err)
   {
